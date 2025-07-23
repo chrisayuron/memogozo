@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Memogozo</title>
+    <style>
+        /* Estilos CSS integrados */
+        body {
+            font-family: 'Inter', Arial, sans-serif; /* Usando Inter como se sugiere */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #e0f2f7; /* Un color de fondo más suave */
+            margin: 10px; /* Reducido el margen superior del body */
+            padding: 10px; /* Reducido el padding del body */
+            min-height: 100vh; /* Asegura que el body ocupe al menos toda la altura de la ventana */
+            box-sizing: border-box; /* Incluye padding y borde en el tamaño total */
+        }
+
+        h1 {
+            color: #263238;
+            margin-bottom: 15px; /* Ajustado el margen inferior del título */
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .top-controls {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px; /* Espacio entre el info y el botón */
+            margin-bottom: 25px; /* Margen debajo de los controles superiores */
+            flex-wrap: wrap; /* Permite que los elementos se envuelvan en pantallas pequeñas */
+        }
+
+        .game-info {
+            font-size: 1.3em;
+            color: #455a64;
+            background-color: #ffffff;
+            padding: 10px 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            display: flex;
+            gap: 30px;
+        }
+
+        .game-board {
+            display: grid;
+            gap: 12px; /* Espacio entre cartas */
+            padding: 25px;
+            background-color: #b3e5fc; /* Un color de fondo para el tablero */
+            border-radius: 15px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+            max-width: 90%; /* Hace el tablero más responsivo */
+            /* Ajustado para 8 columnas para un diseño más ancho */
+            grid-template-columns: repeat(8, 1fr); 
+        }
+
+        .card {
+            width: 110px; /* Tamaño ligeramente más grande */
+            height: 110px;
+            background-color: #81d4fa; /* Color de la parte trasera de la carta */
+            border-radius: 12px; /* Bordes más redondeados */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.6em;
+            font-weight: bold;
+            color: #fff;
+            cursor: pointer;
+            perspective: 1000px; /* Para el efecto de volteo 3D */
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+            transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.2);
+        }
+
+        .card-inner {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 0.6s ease-in-out; 
+        }
+
+        .card.flipped .card-inner {
+            transform: rotateY(180deg);
+        }
+
+        .card-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            display: flex;
+            flex-direction: column; /* Para apilar número y texto */
+            justify-content: center;
+            align-items: center;
+            border-radius: 12px;
+            box-sizing: border-box;
+            padding: 10px;
+        }
+
+        .card-front {
+            background: linear-gradient(135deg, #0288d1 0%, #03a9f4 100%); /* Degradado para el frente */
+            color: #fff;
+            font-size: 1.2em; /* Tamaño más pequeño para el número */
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.2);
+        }
+
+        .card-front span.gozo-text {
+            font-size: 0.5em; /* Tamaño más pequeño para "gozo" */
+            margin-top: 5px;
+            font-weight: normal;
+            letter-spacing: 1px;
+        }
+
+        .card-back {
+            background-color: #ffffff;
+            color: #333;
+            transform: rotateY(180deg);
+            padding: 10px;
+            overflow: hidden;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.05); /* Sutil sombra interna */
+            font-size: 0.75em; /* Tamaño de fuente ajustado para el texto de la tarjeta */
+            text-align: center; /* Centrar el texto horizontalmente */
+            line-height: 1.3; /* Espaciado entre líneas para mejor lectura */
+        }
+
+        .card-back img {
+            max-width: 90%;
+            max-height: 90%;
+            object-fit: contain;
+            border-radius: 8px; /* Bordes redondeados para imágenes */
+        }
+
+        .card.matched {
+            opacity: 0; /* Desaparece suavemente */
+            transform: scale(0.8); /* Se encoge un poco al desaparecer */
+            transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+            pointer-events: none; /* Evita que se pueda hacer clic en ellas */
+        }
+
+        button {
+            padding: 12px 25px;
+            font-size: 1.1em;
+            cursor: pointer;
+            background: linear-gradient(45deg, #4CAF50 0%, #8bc34a 100%); /* Degradado para el botón */
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            transition: background-color 0.3s, transform 0.2s, box-shadow 0.2s;
+        }
+
+        button:hover {
+            background: linear-gradient(45deg, #8bc34a 0%, #4CAF50 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.3);
+        }
+
+        /* Confeti styles */
+        .confetti-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none; /* Allows clicks to pass through */
+            overflow: hidden;
+            z-index: 999;
+        }
+
+        .confetti {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background-color: var(--confetti-color);
+            border-radius: 50%;
+            opacity: 0;
+            animation: confetti-fall 3s forwards ease-out;
+        }
+
+        @keyframes confetti-fall {
+            0% {
+                transform: translateY(0) rotate(0deg) scale(1);
+                opacity: 0;
+            }
+            10% {
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(100vh) rotate(720deg) scale(0.5);
+                opacity: 0;
+            }
+        }
+
+        /* Responsividad para pantallas más pequeñas */
+        @media (max-width: 600px) {
+            .card {
+                width: 80px;
+                height: 80px;
+                font-size: 1.2em;
+            }
+            .card-front {
+                font-size: 1em; /* Ajuste para pantallas pequeñas */
+            }
+            .card-front span.gozo-text {
+                font-size: 0.35em; /* Ajuste para pantallas pequeñas */
+            }
+            .card-back {
+                font-size: 0.7em; /* Ajuste para pantallas pequeñas */
+            }
+            .game-board {
+                padding: 15px;
+                gap: 8px;
+            }
+            h1 {
+                font-size: 2em;
+            }
+            .game-info {
+                font-size: 1em;
+                gap: 20px;
+            }
+            button {
+                padding: 10px 20px;
+                font-size: 1em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>¡Memogozo!</h1>
+    <div class="top-controls">
+        <div class="game-info">
+            <p>Intentos: <span id="attempts">0</span></p>
+            <p>Parejas encontradas: <span id="matches">0</span></p>
+        </div>
+        <button id="reset-button">Reiniciar Juego</button>
+    </div>
+    <div id="game-board" class="game-board">
+        <!-- Las cartas se generarán aquí con JavaScript -->
+    </div>
+
+    <script>
+        // Lógica JavaScript integrada
+        document.addEventListener('DOMContentLoaded', () => {
+            const gameBoard = document.getElementById('game-board');
+            const attemptsSpan = document.getElementById('attempts');
+            const matchesSpan = document.getElementById('matches');
+            const resetButton = document.getElementById('reset-button');
+
+            // Define los valores únicos para cada par.
+            // Cada objeto representa un concepto de "gozo" que tendrá una tarjeta de texto y una de imagen.
+            const pairValues = [
+                { text: 'Abrazo cálido', image: './images/abrazocalido.jpg' },
+                { text: 'Canto de pájaros', image: './images/cantopajaro.jpg' },
+                { text: 'Música favorita', image: './images/musicafavorita.jpg' },
+                { text: 'Día soleado', image: './images/diasoleado.webp' },
+                { text: 'Risa contagiosa', image: './images/risacontagiosa.avif' },
+                { text: 'Noticia feliz', image: './images/noticiafeliz.jpg' },
+                { text: 'Comida deliciosa', image: './images/comidadeliciosa.webp' },
+                { text: 'Logro personal', image: './images/logropersonal.jfif' },
+                { text: 'Naturaleza pura', image: './images/naturalezapura.avif' },
+                { text: 'Ayudar a otros', image: './images/ayudarotros.jfif' },
+                { text: 'Recuerdo dulce', image: './images/dulcerecuerdo.avif' },
+                { text: 'Baile espontáneo', image: './images/baileespontaneo.avif' },
+                { text: 'Mascota juguetona', image: './images/mascotajuguetona.webp' },
+                { text: 'Libro cautivador', image: './images/librocautivador.jpg' },
+                { text: 'Viaje soñado', image: './images/viajesoñado.jfif' },
+                { text: 'Sueño cumplido', image: './images/suenocumplido.jpg' }
+            ];
+
+            let cards = [];
+            let flippedCards = [];
+            let matchedPairs = 0;
+            let attempts = 0;
+            let lockBoard = false; // Para evitar clics mientras se voltean cartas
+
+            function initializeGame() {
+                // Reiniciar contadores
+                matchedPairs = 0;
+                attempts = 0;
+                updateGameInfo();
+
+                cards = [];
+                // Crear 2 tarjetas para cada valor de par (una de texto, una de imagen)
+                pairValues.forEach((pair, pairIndex) => {
+                    // Tarjeta de texto
+                    cards.push({
+                        id: `card-${pairIndex}-text`, // ID único para la instancia de la tarjeta
+                        pairId: pairIndex, // ID para emparejar
+                        type: 'text',
+                        value: pair.text,
+                        isFlipped: false,
+                        isMatched: false
+                    });
+                    // Tarjeta de imagen
+                    cards.push({
+                        id: `card-${pairIndex}-image`, // ID único para la instancia de la tarjeta
+                        pairId: pairIndex, // ID para emparejar
+                        type: 'image',
+                        value: pair.image,
+                        isFlipped: false,
+                        isMatched: false
+                    });
+                });
+
+                shuffleCards();
+                renderBoard();
+            }
+
+            function shuffleCards() {
+                for (let i = cards.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [cards[i], cards[j]] = [cards[j], cards[i]]; // Intercambio de elementos
+                }
+            }
+
+            function renderBoard() {
+                gameBoard.innerHTML = ''; // Limpiar el tablero antes de renderizar
+                // Establece el tablero a 8 columnas explícitamente para un diseño de 8x4
+                gameBoard.style.gridTemplateColumns = `repeat(8, 1fr)`;
+
+                cards.forEach((card, index) => { // Usamos 'index' para el número en el frente de la carta
+                    const cardElement = document.createElement('div');
+                    cardElement.classList.add('card');
+                    cardElement.dataset.id = card.id; // Usamos el ID único de la carta
+
+                    const cardInner = document.createElement('div');
+                    cardInner.classList.add('card-inner');
+
+                    const cardFront = document.createElement('div');
+                    cardFront.classList.add('card-face', 'card-front');
+                    
+                    // Contenido del frente de la carta: número y "gozo"
+                    const cardNumber = document.createElement('span');
+                    cardNumber.textContent = index + 1; // Muestra un número secuencial
+                    
+                    const gozoText = document.createElement('span');
+                    gozoText.classList.add('gozo-text');
+                    gozoText.textContent = 'gozo';
+
+                    cardFront.appendChild(cardNumber);
+                    cardFront.appendChild(gozoText);
+
+                    const cardBack = document.createElement('div');
+                    cardBack.classList.add('card-face', 'card-back');
+                    
+                    if (card.type === 'text') { // Usamos card.type aquí
+                        cardBack.textContent = card.value; // Usamos card.value aquí
+                    } else if (card.type === 'image') { // Usamos card.type aquí
+                        const img = document.createElement('img');
+                        img.src = card.value; // Usamos card.value aquí
+                        img.alt = 'Imagen de carta';
+                        cardBack.appendChild(img);
+                    }
+
+                    cardInner.appendChild(cardFront);
+                    cardInner.appendChild(cardBack);
+                    cardElement.appendChild(cardInner);
+
+                    // Aplica la clase 'flipped' si la carta ya está volteada
+                    if (card.isFlipped) {
+                        cardElement.classList.add('flipped');
+                    }
+                    // Aplica la clase 'matched' si la carta ya está emparejada
+                    if (card.isMatched) {
+                        cardElement.classList.add('matched');
+                    }
+
+                    cardElement.addEventListener('click', () => flipCard(card.id));
+                    gameBoard.appendChild(cardElement);
+                });
+            }
+
+            function flipCard(id) {
+                if (lockBoard) return; // Si el tablero está bloqueado, no hacer nada
+                const clickedCardIndex = cards.findIndex(card => card.id === id);
+                const clickedCard = cards[clickedCardIndex];
+
+                if (clickedCard.isFlipped || clickedCard.isMatched) return; // Si ya está volteada o emparejada, no hacer nada
+
+                clickedCard.isFlipped = true;
+                flippedCards.push(clickedCard);
+
+                // Obtener el elemento de la tarjeta directamente y añadir la clase 'flipped'
+                const cardElement = gameBoard.querySelector(`[data-id="${id}"]`);
+                if (cardElement) {
+                    cardElement.classList.add('flipped');
+                }
+
+                if (flippedCards.length === 2) {
+                    attempts++;
+                    updateGameInfo();
+                    lockBoard = true; // Bloquear el tablero
+                    // Esperar 1 segundo para que la animación de volteo se complete antes de verificar
+                    setTimeout(checkForMatch, 1000); 
+                }
+            }
+
+            function checkForMatch() {
+                const [card1, card2] = flippedCards;
+
+                // Compara los pairId de las cartas
+                if (card1.pairId === card2.pairId) { // ¡Cambiado para comparar pairId!
+                    // Son una pareja
+                    card1.isMatched = true;
+                    card2.isMatched = true;
+                    matchedPairs++;
+                    updateGameInfo();
+                    
+                    // Generar confeti al encontrar una pareja
+                    generateConfetti();
+
+                    // Ocultar las cartas emparejadas después de un breve retraso
+                    setTimeout(() => {
+                        const card1Element = gameBoard.querySelector(`[data-id="${card1.id}"]`);
+                        const card2Element = gameBoard.querySelector(`[data-id="${card2.id}"]`);
+                        if (card1Element) card1Element.classList.add('matched');
+                        if (card2Element) card2Element.classList.add('matched');
+
+                        checkWinCondition();
+                        lockBoard = false; // Desbloquear el tablero
+                        flippedCards = []; // Limpiar las cartas volteadas
+                    }, 500); // Pequeño retraso para que el usuario vea el par
+                    
+                } else {
+                    // No son una pareja, voltearlas de nuevo
+                    setTimeout(() => {
+                        card1.isFlipped = false;
+                        card2.isFlipped = false;
+                        
+                        const card1Element = gameBoard.querySelector(`[data-id="${card1.id}"]`);
+                        const card2Element = gameBoard.querySelector(`[data-id="${card2.id}"]`);
+                        if (card1Element) card1Element.classList.remove('flipped');
+                        if (card2Element) card2Element.classList.remove('flipped');
+
+                        lockBoard = false; // Desbloquear el tablero
+                        flippedCards = []; // Limpiar las cartas volteadas
+                    }, 1000); // Esperar un segundo antes de voltearlas de nuevo
+                }
+            }
+
+            function updateGameInfo() {
+                attemptsSpan.textContent = attempts;
+                matchesSpan.textContent = matchedPairs;
+            }
+
+            function checkWinCondition() {
+                if (matchedPairs === pairValues.length) { // Si todas las parejas han sido encontradas (basado en pairValues)
+                    setTimeout(() => {
+                        // En lugar de alert(), puedes mostrar un modal personalizado
+                        const winMessage = document.createElement('div');
+                        winMessage.style.position = 'fixed';
+                        winMessage.style.top = '50%';
+                        winMessage.style.left = '50%';
+                        winMessage.style.transform = 'translate(-50%, -50%)';
+                        winMessage.style.backgroundColor = '#4CAF50';
+                        winMessage.style.color = 'white';
+                        winMessage.style.padding = '30px';
+                        winMessage.style.borderRadius = '15px';
+                        winMessage.style.boxShadow = '0 5px 15px rgba(0,0,0,0.3)';
+                        winMessage.style.zIndex = '1000';
+                        winMessage.style.fontSize = '1.8em';
+                        winMessage.style.textAlign = 'center';
+                        winMessage.style.border = '3px solid #388e3c';
+                        winMessage.textContent = '¡Felicidades! ¡Has ganado el juego!';
+                        document.body.appendChild(winMessage);
+
+                        setTimeout(() => {
+                            winMessage.remove(); // Elimina el mensaje después de un tiempo
+                        }, 3000); // El mensaje desaparece después de 3 segundos
+                    }, 300); 
+                }
+            }
+
+            // Función para generar confeti
+            function generateConfetti() {
+                const confettiContainer = document.createElement('div');
+                confettiContainer.classList.add('confetti-container');
+                document.body.appendChild(confettiContainer);
+
+                const colors = ['#f44336', '#e91e63', '#9c27b0', '#673ab7', '#3f51b5', '#2196f3', '#03a9f4', '#00bcd4', '#009688', '#4CAF50', '#8bc34a', '#cddc39', '#ffeb3b', '#ffc107', '#ff9800', '#ff5722', '#795548', '#9e9e9e', '#607d8b'];
+
+                for (let i = 0; i < 100; i++) { // Generar 100 piezas de confeti
+                    const confetti = document.createElement('div');
+                    confetti.classList.add('confetti');
+                    confetti.style.left = `${Math.random() * 100}vw`;
+                    confetti.style.animationDelay = `${Math.random() * 0.5}s`;
+                    confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                    confetti.style.setProperty('--confetti-color', colors[Math.floor(Math.random() * colors.length)]); // Set custom property for animation
+                    confettiContainer.appendChild(confetti);
+                }
+
+                // Eliminar el contenedor de confeti después de la animación
+                setTimeout(() => {
+                    confettiContainer.remove();
+                }, 3000);
+            }
+
+            resetButton.addEventListener('click', initializeGame); // El botón de reinicio ahora llama a initializeGame
+
+            // Iniciar el juego cuando se carga la página
+            initializeGame();
+        });
+    </script>
+</body>
+</html>
+    
